@@ -2,6 +2,8 @@
 //  examples/ui
 //
 //  Created by Eric Levin on 1/4/15
+//
+//  Edited by Ryan Babiuch on 1/18/15
 //  Copyright 2015 High Fidelity, Inc.
 //
 //  This script adds an energy bar overlay which displays the amount of energy a user has left for grabbing and moving objects
@@ -22,9 +24,6 @@ var energyLossRate = 0.003;
 var energyChargeRate = 0.003;
 var isGrabbing = false;
 var refractoryPeriod = 2000;
-
-var lastAvatarVelocity = MyAvatar.getVelocity(); 
-var lastAvatarPosition = MyAvatar.position;
 
 var background = Overlays.addOverlay("text", {
     x: xPosition,
@@ -51,45 +50,8 @@ function setEnergy(energy) {
     Overlays.editOverlay(bar, { width: barWidth, backgroundColor: color});
 }
 
-function avatarAccelerationEnergy() {
-    var AVATAR_MOVEMENT_ENERGY_CONSTANT = 0.001;
-    var velocity = MyAvatar.getVelocity(); 
-    var dV = Math.abs(Vec3.length(velocity) - Vec3.length(lastAvatarVelocity));
-    var dE = Vec3.length(lastAvatarVelocity) * dV * AVATAR_MOVEMENT_ENERGY_CONSTANT;
-    lastAvatarVelocity = velocity;  
-    return dE;
-}
-
-function teleported() {
-    var MAX_AVATAR_MOVEMENT_PER_FRAME = 30.0;
-    var position = MyAvatar.position; 
-    var dP = Vec3.length(Vec3.subtract(position, lastAvatarPosition));
-    lastAvatarPosition = position;
-    return (dP > MAX_AVATAR_MOVEMENT_PER_FRAME);
-}
-
-function audioEnergy() {
-    var AUDIO_ENERGY_CONSTANT = 0.000001;
-    return MyAvatar.audioLoudness * AUDIO_ENERGY_CONSTANT;
-}
-
 function update() {
-    // refill energy
-    currentEnergy += energyChargeRate;
-
-    //  Avatar acceleration
-    currentEnergy -= avatarAccelerationEnergy();
-
-    // Teleport cost 
-    if (teleported()) {
-        currentEnergy = 0;
-    }
-
-    // Making sounds
-    currentEnergy -= audioEnergy(); 
-
-
-    currentEnergy = clamp(currentEnergy, 0, 1);
+    currentEnergy = clamp(MyAvatar.energy, 0, 1);
     setEnergy(currentEnergy);
 }
 

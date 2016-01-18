@@ -283,6 +283,18 @@ void MyAvatar::update(float deltaTime) {
     head->setAudioLoudness(audio->getLastInputLoudness());
     head->setAudioAverageLoudness(audio->getAudioAverageInputLoudness());
 
+    
+    currentEnergy += energyChargeRate;
+    currentEnergy -= getAccelerationEnergy();
+    
+    if(didTeleport()) {
+        currentEnergy = 0;
+    }
+    
+    
+    currentEnergy -= getAudioEnergy();
+    
+    
     simulate(deltaTime);
 }
 
@@ -1831,4 +1843,28 @@ void audioListenModeFromScriptValue(const QScriptValue& object, AudioListenerMod
 
 void MyAvatar::lateUpdatePalms() {
     Avatar::updatePalms();
+}
+
+float MyAvatar::getAccelerationEnergy() {
+    glm::vec3 velocity = getVelocity();
+    glm::vec3 changeInVelocity = velocity - priorVelocity;
+    float changeInEnergy = velocity.length()*changeInVelocity.length()*AVATAR_MOVEMENT_ENERGY_CONSTANT;
+    priorVelocity = velocity;
+    
+    return changeInEnergy;
+}
+
+float MyAvatar::getEnergy() {
+    return currentEnergy;
+}
+
+float MyAvatar::getAudioEnergy() {
+    return getAudioLoudness()*AUDIO_ENERGY_CONSTANT;
+}
+
+bool MyAvatar::didTeleport() {
+    glm::vec3 pos = getPosition();
+    glm::vec3 changeInPosition = pos - lastPosition;
+    lastPosition = pos;
+    return (changeInPosition.length() > MAX_AVATAR_MOVEMENT_PER_FRAME);
 }

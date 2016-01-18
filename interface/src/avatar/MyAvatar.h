@@ -79,6 +79,7 @@ class MyAvatar : public Avatar {
     Q_PROPERTY(controller::Pose leftHandTipPose READ getLeftHandTipPose)
     Q_PROPERTY(controller::Pose rightHandTipPose READ getRightHandTipPose)
 
+    Q_PROPERTY(float energy READ getEnergy)
 public:
     MyAvatar(RigPointer rig);
     ~MyAvatar();
@@ -396,6 +397,19 @@ private:
 
     AtRestDetector _hmdAtRestDetector;
     bool _lastIsMoving { false };
+    
+    float AVATAR_MOVEMENT_ENERGY_CONSTANT { 0.001 };
+    float AUDIO_ENERGY_CONSTANT { 0.000001f };
+    float MAX_AVATAR_MOVEMENT_PER_FRAME = 30.0f;
+    float currentEnergy { 0.0f };
+    float energyChargeRate { 0.003 };
+    glm::vec3 priorVelocity;
+    glm::vec3 lastPosition;
+    float getAudioEnergy();
+    float getAccelerationEnergy();
+    float getEnergy();
+    bool didTeleport();
+    
 };
 
 QScriptValue audioListenModeToScriptValue(QScriptEngine* engine, const AudioListenerMode& audioListenerMode);
