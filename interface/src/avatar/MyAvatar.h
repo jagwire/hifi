@@ -398,11 +398,11 @@ private:
     AtRestDetector _hmdAtRestDetector;
     bool _lastIsMoving { false };
     
-    float AVATAR_MOVEMENT_ENERGY_CONSTANT { 0.001 };
+    float AVATAR_MOVEMENT_ENERGY_CONSTANT { 0.001f };
     float AUDIO_ENERGY_CONSTANT { 0.000001f };
-    float MAX_AVATAR_MOVEMENT_PER_FRAME = 30.0f;
+    float MAX_AVATAR_MOVEMENT_PER_FRAME = { 30.0f };
     float currentEnergy { 0.0f };
-    float energyChargeRate { 0.003 };
+    float energyChargeRate { 0.003f };
     glm::vec3 priorVelocity;
     glm::vec3 lastPosition;
     float getAudioEnergy();
