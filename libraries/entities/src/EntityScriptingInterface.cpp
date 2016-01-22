@@ -964,3 +964,19 @@ bool EntityScriptingInterface::setAbsoluteJointsDataInObjectFrame(const QUuid& e
     return setAbsoluteJointRotationsInObjectFrame(entityID, rotations) ||
         setAbsoluteJointTranslationsInObjectFrame(entityID, translations);
 }
+
+void EntityScriptingInterface::setFilterFunction(QJSValue& f) {
+    _scriptedFilterFunction = &f;
+}
+
+bool EntityScriptingInterface::hasEnoughEnergy() {
+    if(_scriptedFilterFunction == nullptr) return true;
+    if(!_scriptedFilterFunction->isCallable()) return true;
+    
+    QJSValue output = _scriptedFilterFunction->call();
+    
+    //something happened to the energy calculation function, so just default to having enough energy
+    if(!output.isBool() || output.isError()) return true;
+    
+    return output.toBool();
+}

@@ -16,7 +16,7 @@
 
 #include <QtCore/QObject>
 #include <QtCore/QStringList>
-
+#include <QJSValue>
 #include <DependencyManager.h>
 #include <Octree.h>
 #include <OctreeScriptingInterface.h>
@@ -160,6 +160,9 @@ public slots:
     Q_INVOKABLE bool setAbsoluteJointsDataInObjectFrame(const QUuid& entityID,
                                                         const QVector<glm::quat>& rotations,
                                                         const QVector<glm::vec3>& translations);
+    
+    //SETTER method for scripted filter function
+    Q_INVOKABLE void setFilterFunction(QJSValue& f);
 
 signals:
     void collisionWithEntity(const EntityItemID& idA, const EntityItemID& idB, const Collision& collision);
@@ -202,6 +205,15 @@ private:
 
     EntityTreePointer _entityTree;
     EntitiesScriptEngineProvider* _entitiesScriptEngine = nullptr;
+    
+    
+    //for energy filtering
+    QJSValue* _scriptedFilterFunction = nullptr;
+    
+    //wrapper method to call filter function
+    bool hasEnoughEnergy();
+    
+    
 };
 
 #endif // hifi_EntityScriptingInterface_h
