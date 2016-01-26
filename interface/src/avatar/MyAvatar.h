@@ -267,6 +267,7 @@ signals:
     void transformChanged();
     void newCollisionSoundURL(const QUrl& url);
     void collisionWithEntity(const Collision& collision);
+    void energyChanged(float newEnergy);
 
 private:
 

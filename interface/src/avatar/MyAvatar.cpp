@@ -293,7 +293,7 @@ void MyAvatar::update(float deltaTime) {
     
     
     currentEnergy -= getAudioEnergy();
-    
+    emit energyChanged(currentEnergy);
     
     simulate(deltaTime);
 }

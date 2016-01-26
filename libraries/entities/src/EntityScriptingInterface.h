@@ -57,6 +57,9 @@ void RayToEntityIntersectionResultFromScriptValue(const QScriptValue& object, Ra
 /// handles scripting of Entity commands from JS passed to assigned clients
 class EntityScriptingInterface : public OctreeScriptingInterface, public Dependency  {
     Q_OBJECT
+    
+    Q_PROPERTY(float currentAvatarEnergy READ getCurrentAvatarEnergy WRITE setCurrentAvatarEnergy)
+    
 public:
     EntityScriptingInterface();
 
@@ -67,7 +70,7 @@ public:
     void setEntityTree(EntityTreePointer modelTree);
     EntityTreePointer getEntityTree() { return _entityTree; }
     void setEntitiesScriptEngine(EntitiesScriptEngineProvider* engine) { _entitiesScriptEngine = engine; }
-
+    double calculateCost(float mass, float oldVelocity, float newVelocity);
 public slots:
 
     // returns true if the DomainServer will allow this Node/Avatar to make changes
@@ -160,10 +163,8 @@ public slots:
     Q_INVOKABLE bool setAbsoluteJointsDataInObjectFrame(const QUuid& entityID,
                                                         const QVector<glm::quat>& rotations,
                                                         const QVector<glm::vec3>& translations);
+    Q_INVOKABLE void addCostFunction(QJSValue& costFunction);
     
-    //SETTER method for scripted filter function
-    Q_INVOKABLE void setFilterFunction(QJSValue& f);
-
 signals:
     void collisionWithEntity(const EntityItemID& idA, const EntityItemID& idB, const Collision& collision);
 
@@ -205,15 +206,10 @@ private:
 
     EntityTreePointer _entityTree;
     EntitiesScriptEngineProvider* _entitiesScriptEngine = nullptr;
-    
-    
-    //for energy filtering
-    QJSValue* _scriptedFilterFunction = nullptr;
-    
-    //wrapper method to call filter function
-    bool hasEnoughEnergy();
-    
-    
+    QJSValue* _costFunction = nullptr;
+    float _currentAvatarEnergy;
+    float getCurrentAvatarEnergy() { return _currentAvatarEnergy; }
+    void setCurrentAvatarEnergy(float energy) { _currentAvatarEnergy = energy; }
 };
 
 #endif // hifi_EntityScriptingInterface_h

@@ -24,7 +24,6 @@
 #include "SimulationOwner.h"
 #include "ZoneEntityItem.h"
 
-
 EntityScriptingInterface::EntityScriptingInterface() :
     _entityTree(NULL)
 {
@@ -119,11 +118,26 @@ EntityItemProperties convertLocationFromScriptSemantics(const EntityItemProperti
 
 
 QUuid EntityScriptingInterface::addEntity(const EntityItemProperties& properties) {
+    
+    
     EntityItemProperties propertiesWithSimID = convertLocationFromScriptSemantics(properties);
     propertiesWithSimID.setDimensionsInitialized(properties.dimensionsChanged());
 
     EntityItemID id = EntityItemID(QUuid::createUuid());
 
+    
+    //check our user-defined script, if it exists, to see if we have the energy to do what we want.
+    auto dimensions = propertiesWithSimID.getDimensions();
+    float volume = dimensions.x * dimensions.y * dimensions.z;
+    double cost = calculateCost(propertiesWithSimID.getDensity()*volume,
+                                0, // 0 - old velocity because the entity doesn't exist yet
+                                propertiesWithSimID.getVelocity().length()); //new velocity as specified by scripter
+    
+    //compare cost with MyAvatar.getEnergy();
+    if(cost > _currentAvatarEnergy) {
+        return id;
+    }
+    
     // If we have a local entity tree set, then also update it.
     bool success = true;
     if (_entityTree) {
@@ -150,6 +164,9 @@ QUuid EntityScriptingInterface::addEntity(const EntityItemProperties& properties
         });
     }
 
+    
+    
+    
     // queue the packet
     if (success) {
         queueEntityMessage(PacketType::EntityAdd, id, propertiesWithSimID);
@@ -203,11 +220,35 @@ EntityItemProperties EntityScriptingInterface::getEntityProperties(QUuid identit
 QUuid EntityScriptingInterface::editEntity(QUuid id, const EntityItemProperties& scriptSideProperties) {
     EntityItemProperties properties = scriptSideProperties;
     EntityItemID entityID(id);
+    
+    
+    
+    
+    
+    
+    
     if (!_entityTree) {
         queueEntityMessage(PacketType::EntityEdit, entityID, properties);
         return id;
     }
     // If we have a local entity tree set, then also update it.
+    
+    EntityItemPointer entity = _entityTree->findEntityByEntityItemID(entityID);
+    
+    auto dimensions = entity->getDimensions();
+    float density = entity->getDensity();
+    float volume = dimensions.x * dimensions.y * dimensions.z;
+    double cost = calculateCost(density*volume,
+                                entity->getVelocity().length(), // old velocity
+                                scriptSideProperties.getVelocity().length()); //new velocity as specified by scripter
+    //compare cost with MyAvatar.getEnergy();
+    if(cost > _currentAvatarEnergy) {
+        return id;
+    }
+    
+    
+    
+    
 
     bool updatedEntity = false;
     _entityTree->withWriteLock([&] {
@@ -306,6 +347,18 @@ void EntityScriptingInterface::deleteEntity(QUuid id) {
     if (_entityTree) {
         _entityTree->withWriteLock([&] {
             EntityItemPointer entity = _entityTree->findEntityByEntityItemID(entityID);
+            
+            auto dimensions = entity->getDimensions();
+            float volume = dimensions.x * dimensions.y * dimensions.z;
+            float density = entity->getDensity();
+            double cost = calculateCost(density*volume,
+                                        entity->getVelocity().length(),
+                                        0);
+            //compare with MyAvatar.getEnergy()
+            if(cost > _currentAvatarEnergy) {
+                return;
+            }
+            
             if (entity) {
                 if (entity->getLocked()) {
                     shouldDelete = false;
@@ -965,18 +1018,20 @@ bool EntityScriptingInterface::setAbsoluteJointsDataInObjectFrame(const QUuid& e
         setAbsoluteJointTranslationsInObjectFrame(entityID, translations);
 }
 
-void EntityScriptingInterface::setFilterFunction(QJSValue& f) {
-    _scriptedFilterFunction = &f;
+void EntityScriptingInterface::addCostFunction(QJSValue& costFunction) {
+    _costFunction = &costFunction;
 }
 
-bool EntityScriptingInterface::hasEnoughEnergy() {
-    if(_scriptedFilterFunction == nullptr) return true;
-    if(!_scriptedFilterFunction->isCallable()) return true;
+double EntityScriptingInterface::calculateCost(float mass, float oldVelocity, float newVelocity) {
+    if(_costFunction == nullptr) return 0.0;
+    if(!_costFunction->isCallable()) return 0.0;
     
-    QJSValue output = _scriptedFilterFunction->call();
+    QJSValueList arguments;
+    arguments << mass << oldVelocity << newVelocity;
+    QJSValue output = _costFunction->call(arguments);
     
-    //something happened to the energy calculation function, so just default to having enough energy
-    if(!output.isBool() || output.isError()) return true;
+    if(!output.isNumber()) return 0.0;
     
-    return output.toBool();
+    return output.toNumber();
+    
 }
