@@ -60,5 +60,10 @@ function cleanup() {
     Overlays.deleteOverlay(bar);
 }
 
+function energyChanged(newValue) {
+ Entities.currentAvatarEnergy = newValue;
+}
+
+MyAvatar.energyChanged.connect(energyChanged);
 Script.update.connect(update);
 Script.scriptEnding.connect(cleanup);
